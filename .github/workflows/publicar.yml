@@ -14,21 +14,40 @@ concurrency:
   group: github-pages
 
 jobs:
+  generar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+
+      - name: Generar el catálogo desde Excel
+        run: |
+          python generar.py
+          test -s _site/index.html
+
+      - uses: actions/configure-pages@v5
+
+      - name: Subir el paquete del sitio
+        uses: actions/upload-pages-artifact@v4
+        with:
+          name: github-pages
+          path: _site
+
   publicar:
+    needs: generar
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.publicacion.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - run: python -m pip install -r requirements.txt
-      - run: python generar.py
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: _site
-      - uses: actions/deploy-pages@v4
+      - name: Publicar en GitHub Pages
         id: publicacion
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
